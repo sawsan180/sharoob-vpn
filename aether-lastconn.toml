@@ -1,0 +1,4 @@
+peer = "188.114.97.61:3138"
+profile = "balanced"
+carrier = "wireguard"
+recent = ["188.114.97.61:3138"]
