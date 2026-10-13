@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Sharoob VPN Launcher v2.3.11 - Clean Update (md5-verified)
+# Sharoob VPN Launcher v2.3.12 - Clean Update (md5-verified)
 
 GH_USER="sawsan180"
 GH_REPO="sharoob-vpn"
@@ -9,6 +9,7 @@ DIR="/data/data/com.termux/files/usr/bin"
 VER_FILE="$DIR/.sharoob_version"
 BIN_FILE="$DIR/sharoob.bin"
 MENU_FILE="$DIR/sharoob_menu.py"
+SCAN_FILE="$DIR/sharoob_scan.py"
 
 G='\033[1;32m'; Y='\033[1;33m'; R='\033[1;31m'; N='\033[0m'
 
@@ -101,6 +102,25 @@ if [ "$MENU_SZ" -lt 5000 ]; then
     echo -e "${Y}[*] Manual:${N}"
     echo "  curl -fsSL ${BASE}/sharoob_menu.py -o $MENU_FILE"
     exit 1
+fi
+
+
+# ─── Scan file: cmp-based update ───
+if [ -n "$REMOTE" ]; then
+    if fetch_new "${BASE}/sharoob_scan.py" "${SCAN_FILE}.candidate" 1000 "Scan"; then
+        if [ ! -f "$SCAN_FILE" ]; then
+            mv "${SCAN_FILE}.candidate" "$SCAN_FILE"
+            chmod +x "$SCAN_FILE"
+            echo -e "${G}[+] Scan installed${N}"
+        elif ! cmp -s "$SCAN_FILE" "${SCAN_FILE}.candidate"; then
+            rm -f "$SCAN_FILE"
+            mv "${SCAN_FILE}.candidate" "$SCAN_FILE"
+            chmod +x "$SCAN_FILE"
+            echo -e "${G}[+] Scan updated (clean)${N}"
+        else
+            rm -f "${SCAN_FILE}.candidate"
+        fi
+    fi
 fi
 
 exec python3 "$MENU_FILE" "$@"

@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Sharoob VPN - Installer v2.3.11
+# Sharoob VPN - Installer v2.3.12
 
 GH_USER="sawsan180"
 GH_REPO="sharoob-vpn"
@@ -34,7 +34,6 @@ echo "[*] Downloading core..."
 curl -fsSL "${BASE}/sharoob.bin" -o "${BIN_DIR}/sharoob.bin"
 
 echo "[*] Downloading version..."
-curl -fsSL "${BASE}/sharoob_scan.py" -o "${BIN_DIR}/sharoob_scan.py"
 curl -fsSL "${BASE}/version.txt" -o "${BIN_DIR}/.sharoob_version"
 
 # 4) Permissions

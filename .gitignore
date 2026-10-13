@@ -3,3 +3,5 @@ aether-lastconn.toml
 *.toml
 *.bak
 *.log
+telegram.conf
+.sharoob/
