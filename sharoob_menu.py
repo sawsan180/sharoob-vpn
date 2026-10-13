@@ -150,11 +150,24 @@ def build_panel(version, connected, state, lang, overlay=None):
         while len(lines) < 16: lines.append("")
     elif state == "connecting":
         lines.append("")
-        msg = "ﺔﻴﻟﺎﺘﻟﺍ ﺔﻈﺘﻧﺍ..." if lang == "ar" else "CONNECTING..."
+        msg = "..." if lang == "ar" else "CONNECTING. . ."
         lines.append(MENU_MARK + center(msg, PW-2))
         msg2 = "..." if lang == "ar" else "please wait"
         lines.append(MENU_MARK + center(msg2, PW-2))
-        for _ in range(5): lines.append("")
+        lines.append("")
+        try:
+            _pp = os.path.expanduser("~/.sharoob/progress")
+            with open(_pp) as _pf:
+                _parts = _pf.read().strip().split()
+                if len(_parts) >= 2:
+                    _pct = int(_parts[0]); _secs = int(_parts[1])
+                    _filled = max(0, min(20, _pct * 20 // 100))
+                    _bar = "\u2588" * _filled + "\u2591" * (20 - _filled)
+                    _txt = "[" + _bar + "] " + str(_pct).rjust(3) + "%   " + str(_secs) + "s"
+                    lines.append(MENU_MARK + center(_txt, PW-2))
+        except Exception:
+            pass
+        for _ in range(4): lines.append("")
     else:
         items = menu_items(lang, connected)
         for it in items: lines.append(MENU_MARK + it)
