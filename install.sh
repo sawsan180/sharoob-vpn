@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Sharoob VPN - Installer v2.3.4
+# Sharoob VPN - Installer v2.3.5
 
 GH_USER="sawsan180"
 GH_REPO="sharoob-vpn"

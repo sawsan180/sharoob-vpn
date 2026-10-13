@@ -1,0 +1,5 @@
+aether.toml
+aether-lastconn.toml
+*.toml
+*.bak
+*.log
