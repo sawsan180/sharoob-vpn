@@ -111,26 +111,43 @@ def rain_char(col, row, head, body, tail):
     if 3 <= d < 8: return tail + random.choice(CHARS) + RESET
     return " "
 
+def _conn_timer():
+    """Return elapsed time since connect (HH:MM:SS) or empty."""
+    try:
+        with open(os.path.expanduser("~/.sharoob/connected_at")) as f:
+            start = int(f.read().strip())
+        elapsed = int(time.time()) - start
+        if elapsed < 0:
+            return ""
+        h, r = divmod(elapsed, 3600)
+        m, s = divmod(r, 60)
+        return f"{h:02d}:{m:02d}:{s:02d}"
+    except Exception:
+        return ""
+
+
 def menu_items(lang, connected):
     if lang == "ar":
         return [
-            ("1)  " + ("ﻞﺼﺘﻣ" if connected else "ﻞﺼﺘﻣ ﺮﻴﻏ")),
+            ("1) " + ("ﻞﺼﺘﻣ" + ("  " + _conn_timer() if _conn_timer() else "") if connected else "ﻞﺼﺘﻣ ﺮﻴﻏ")),
             "2)  ﺔﻟﺎﺤﻟﺍ",
             "3)  ﺕﺎﻤﻠﻌﻟﺍ",
             "4)  ﺕﺍﺩﺍﺪﻋﻹﺍ",
             "5)  ﺓﺪﻋﺎﺴﻣ",
             "6)  [ For English ]",
-            "7)  ﺝﻭﺮﺧ",
+            ("7) ﻝﺎﺼﺗﻹﺍ"),
+            ("8) ﺝﻭﺮﺧ"),
         ]
     else:
         return [
-            ("1)  " + ("Disconnect" if connected else "Connect")),
+            ("1) " + ("Disconnect" + ("  " + _conn_timer() if _conn_timer() else "") if connected else "Connect")),
             "2)  Status",
             "3)  View Logs",
             "4)  Settings",
             "5)  Help",
             "6)  [ ﺔﻴﺑﺮﻌﻟﺍ ]",
-            "7)  Exit",
+            ("7) Connection Info"),
+            ("8) Exit"),
         ]
 
 def build_panel(version, connected, state, lang, overlay=None):
@@ -152,7 +169,7 @@ def build_panel(version, connected, state, lang, overlay=None):
         lines.append("")
         msg = "..." if lang == "ar" else "CONNECTING. . ."
         lines.append(MENU_MARK + center(msg, PW-2))
-        msg2 = "..." if lang == "ar" else "please wait"
+        msg2 = f"v{version}" if lang == "ar" else f"v{version} - please wait"
         lines.append(MENU_MARK + center(msg2, PW-2))
         lines.append("")
         try:
@@ -264,7 +281,7 @@ def run_menu(version):
             update_rain()
             render(version, "menu")
             k = get_key(0.08)
-            if k is not None and k in "1234567": return k
+            if k is not None and k in "12345678": return k
     finally:
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old)
         sys.stdout.write(WRAP + SHOW + RESET)
@@ -329,12 +346,43 @@ def do_stop():
             f.write("disconnected\n")
     except: pass
 
+
+def do_info(version):
+    """Show connection info (IP, country, city, ISP)."""
+    import json as _json
+    st = read_status()
+    if st != "connected":
+        return "VPN: DISCONNECTED\nConnect first (option 1) to see info."
+    try:
+        r = subprocess.run(
+            ["curl", "-s", "--max-time", "10", "http://ip-api.com/json/"],
+            capture_output=True, timeout=12)
+        if r.returncode != 0 or not r.stdout:
+            return "Connection Info\n[!] Failed to fetch (check internet)"
+        data = _json.loads(r.stdout.decode(errors="ignore"))
+        if data.get("status") != "success":
+            return "Connection Info\n[!] API: " + str(data.get("message", "unknown"))
+        return (
+            "IP:        " + str(data.get("query", "?")) + "\n" +
+            "Country:   " + str(data.get("country", "?")) + " (" + str(data.get("countryCode", "?")) + ")\n" +
+            "City:      " + str(data.get("city", "?")) + "\n" +
+            "ISP:       " + str(data.get("isp", "?")) + "\n" +
+            "Org:       " + str(data.get("org", "?")) + "\n" +
+            "Server:    Auto (Sharoob)\n" +
+            "Version:   v" + str(version)
+        )
+    except subprocess.TimeoutExpired:
+        return "Connection Info\n[!] Timeout (network slow)"
+    except Exception as e:
+        return "Connection Info\n[!] " + str(e)[:60]
+
+
 def main():
     version = read_version()
     try:
         while True:
             k = run_menu(version)
-            if k == "7":
+            if k == "8":
                 sys.stdout.write(CLEAR + SHOW); print("Goodbye!"); break
             elif k == "1":
                 conn = (read_status() == "connected")
@@ -353,6 +401,8 @@ def main():
             elif k == "6":
                 cur = get_lang()
                 set_lang("ar" if cur == "en" else "en")
+            elif k == "7":
+                show_overlay(version, do_info(version))
                 # Menu will refresh automatically
     except KeyboardInterrupt:
         sys.stdout.write(SHOW + RESET + "\n")
