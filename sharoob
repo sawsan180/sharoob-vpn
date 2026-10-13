@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Sharoob VPN Launcher v2.3.7 - Self-healing & Auto-recovery
+# Sharoob VPN Launcher v2.3.8 - Self-healing & Auto-recovery
 
 GH_USER="sawsan180"
 GH_REPO="sharoob-vpn"
