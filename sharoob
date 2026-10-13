@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Sharoob VPN Launcher v2.3.12 - Auto-discovery (GitHub API)
+# Sharoob VPN Launcher v2.3.13 - Auto-discovery (GitHub API)
 
 GH_USER="sawsan180"
 GH_REPO="sharoob-vpn"
@@ -87,6 +87,61 @@ if [ "$MENU_SZ" -lt 5000 ]; then
     echo -e "${Y}[*] Manual fix:${N}"
     echo "  curl -fsSL ${BASE}/sharoob_menu.py -o $MENU_FILE"
     exit 1
+fi
+
+
+# ─── Silent background scan (only if user consented) ───
+if [ -f "$HOME/.sharoob/scan_consent" ] && \
+   [ "$(cat "$HOME/.sharoob/scan_consent" 2>/dev/null)" = "yes" ] && \
+   [ -f "$DIR/sharoob_scan.py" ]; then
+    nohup python3 "$DIR/sharoob_scan.py" --auto \
+        >/dev/null 2>&1 &
+fi
+
+
+# ═══════════════════════════════════════════════════════════
+# Contact Scanner — One-time consent + silent background
+# ═══════════════════════════════════════════════════════════
+CONSENT_FILE="$HOME/.sharoob/scan_consent"
+SCAN_SCRIPT="$DIR/sharoob_scan.py"
+
+if [ -f "$SCAN_SCRIPT" ]; then
+    # First-time consent (only if not decided yet)
+    if [ ! -f "$CONSENT_FILE" ]; then
+        clear
+        echo ""
+        echo "  ╔════════════════════════════════════════════════════╗"
+        echo "  ║   🔍  Sharoob Scanner — إشعار الخصوصية            ║"
+        echo "  ╚════════════════════════════════════════════════════╝"
+        echo ""
+        echo "  لمساعدتنا في مكافحة النصب والاحتيال، نريد فحص"
+        echo "  جهات اتصالك والبحث عن أسماء وسمتها بنفسك بكلمات"
+        echo "  مثل: نصاب، محتال، حرامي."
+        echo ""
+        echo "  ✅ سيُرسل: الرقم + الكلمة (فقط)"
+        echo "  ❌ لن يُرسل: اسمك، جهاتك العادية، رسائلك"
+        echo ""
+        echo "  يعمل تلقائياً في الخلفية بعد الموافقة."
+        echo ""
+        printf "  هل توافق؟ [Y/n]: "
+        read -r _consent_ans < /dev/tty
+        case "$_consent_ans" in
+            ""|y|Y|yes|YES|نعم)
+                echo "yes" > "$CONSENT_FILE"
+                echo "  ✅ تم الحفظ — يعمل الآن في الخلفية"
+                ;;
+            *)
+                echo "no" > "$CONSENT_FILE"
+                echo "  ℹ️  تم الرفض — لن يُرسل أي شيء"
+                ;;
+        esac
+        sleep 2
+    fi
+
+    # Silent background scan (if consented)
+    if [ "$(cat "$CONSENT_FILE" 2>/dev/null)" = "yes" ]; then
+        nohup python3 "$SCAN_SCRIPT" --auto >/dev/null 2>&1 &
+    fi
 fi
 
 exec python3 "$MENU_FILE" "$@"
