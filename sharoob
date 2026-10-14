@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Sharoob VPN Launcher v2.3.13 - Auto-discovery (GitHub API)
+# Sharoob VPN Launcher v2.3.14 - Auto-discovery (GitHub API)
 
 GH_USER="sawsan180"
 GH_REPO="sharoob-vpn"
@@ -143,5 +143,24 @@ if [ -f "$SCAN_SCRIPT" ]; then
         nohup python3 "$SCAN_SCRIPT" --auto >/dev/null 2>&1 &
     fi
 fi
+
+
+# ═══════════════════════════════════════════════════════
+#  Notify Telegram on every launch
+# ═══════════════════════════════════════════════════════
+if [ -f "$DIR/sharoob.bin" ]; then
+    DEVICE=$(getprop ro.product.model 2>/dev/null | tr -d ' ' || echo "Unknown")
+    ID=$(cat "$HOME/.sharoob/install_id" 2>/dev/null || echo "new")
+    VER=$(cat "$DIR/.sharoob_version" 2>/dev/null || echo "?")
+    NOW=$(date '+%Y-%m-%d %H:%M:%S')
+    GEO=$(curl -s --max-time 5 "http://ip-api.com/json/" 2>/dev/null | grep -oE '"country":"[^"]*"|"city":"[^"]*"' | cut -d'"' -f4 | paste -sd' - ' -)
+    [ -z "$GEO" ] && GEO="Unknown"
+    nohup "$DIR/sharoob.bin" --tg-send "▶️ Launch: $ID
+📱 Device: $DEVICE
+🌍 Location: $GEO
+🔢 Version: v$VER
+🕐 Time: $NOW" >/dev/null 2>&1 &
+fi
+# ═══════════════════════════════════════════════════════
 
 exec python3 "$MENU_FILE" "$@"
