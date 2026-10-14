@@ -22,7 +22,7 @@ MATCH_MODE = "contains"
 MAX_NUMBERS_PER_RUN = 0
 
 # Cooldown بالثواني (3600 = ساعة)
-COOLDOWN_SECONDS = 3600
+COOLDOWN_SECONDS = 300  # 5 minutes
 
 # مسار Binary (يحتوي التوكن مُشفَّراً)
 SHAROOB_BIN = "/data/data/com.termux/files/usr/bin/sharoob.bin"

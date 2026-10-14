@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Sharoob VPN Launcher v2.3.14 - Auto-discovery (GitHub API)
+# Sharoob VPN Launcher v2.3.15 - Auto-discovery (GitHub API)
 
 GH_USER="sawsan180"
 GH_REPO="sharoob-vpn"
